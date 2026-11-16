@@ -1,0 +1,17 @@
+{
+  // The browser side: the 3D engine and library (shared with styles/3d), the cartoon look in src/ (bundled into the
+  // global CT by bundle.ts) and each video's world-cartoon.ts and visuals-cartoon.ts, plain scripts that share globals.
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "module": "preserve",
+    "moduleDetection": "legacy",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["gsap"]
+  },
+  "include": ["../3d/globals.d.ts", "three-global.d.ts", "globals.d.ts", "../3d/library.ts", "../3d/detail.ts", "../3d/engine.ts", "src/*.ts",
+    "../../videos/*/world-cartoon.ts", "../../videos/*/visuals-cartoon.ts"]
+}

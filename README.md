@@ -10,6 +10,7 @@ It's all code and it renders locally: no paid templates, no stock footage, nothi
 |---|---|---|
 | [Flat 2D](styles/flat2d/USAGE.md) | [HyperFrames](https://github.com/heygen-com/hyperframes) (HTML + SVG + GSAP) | flat, saturated vector: science, fun facts, explainers |
 | [3D](styles/3d/USAGE.md) | [HyperFrames](https://github.com/heygen-com/hyperframes) + [Three.js](https://threejs.org) | low-poly with textured heroes (fur, wood, soil): physics, machines, vehicles, animals, "how it works" with volume |
+| [2.5D cartoon](styles/2.5d_cartoon/USAGE.md) | the 3D engine + [postprocessing](https://github.com/pmndrs/postprocessing) | 2.5D: flat drawn characters in a painted 3D world, ink lines, day or golden hour, lens blur: stories with people (history, everyday situations, anecdotes) |
 
 More styles are coming.
 
@@ -19,7 +20,7 @@ More styles are coming.
 audio (+ assets, notes) + style
  1. Transcribe    every word with its timing                core/transcribe.py   (faster-whisper, local)
  2. Analyze       phrases, pauses, numbers                  core/analyze.ts
- 3. World         characters (and their states), sets,      plan.md + world3d.ts / world.ts
+ 3. World         characters (and their states), sets,      plan.md + world3d.ts / world-cartoon.ts / world.ts
                   camera shots, tested with no scenes yet   core/world.ts -> world.png
  4. Scenes        the AI cuts the audio into scenes.json    (the agent, validated with core/scenes.ts)
  5. Storyboard    one frame per scene, checked by the AI    core/storyboard.ts  (+ live preview: core/preview.ts)
@@ -30,8 +31,8 @@ audio (+ assets, notes) + style
 
 The contract is `scenes.json`: a list of scenes that point at **words** in the audio (not at seconds). The style turns that file into animation:
 - its **library** ships generic scenes per type (question, object, process, comparison, stat, map, asset, closing);
-- the AI builds each video's **world** first (`videos/<topic>/world.ts`, `world3d.ts` in 3D: its characters with their states, sets and camera shots) and tests it on its own with `core/world.ts`;
-- then each scene's **visuals** (`videos/<topic>/visuals.ts`, `visuals3d.ts` in 3D) only assemble that world over the audio's timing.
+- the AI builds each video's **world** first (`videos/<topic>/world.ts`, `world3d.ts` in 3D, `world-cartoon.ts` in cartoon: its characters with their states, sets and camera shots) and tests it on its own with `core/world.ts`;
+- then each scene's **visuals** (`videos/<topic>/visuals.ts`, `visuals3d.ts` in 3D, `visuals-cartoon.ts` in cartoon) only assemble that world over the audio's timing.
 
 On top sits a **titles layer**: a label, a title whose key word gets highlighted when you say it, and a card with the stat.
 
@@ -45,9 +46,9 @@ You install just one thing by hand: Claude Code. Everything else (Git, Node, ffm
 
 **2. Open Claude Code in any folder**, for example your Desktop. The project will be downloaded there.
 
-**3. Paste the setup prompt** of the style you want: copy the block in [prompts/setup-flat2d.md](prompts/setup-flat2d.md) or [prompts/setup-3d.md](prompts/setup-3d.md) and send it. Claude installs whatever is missing, downloads the project and makes you a basic test animation (no voice). It opens in a preview in your browser (http://localhost:3002 for Flat 2D, http://localhost:3003 for 3D, or the one it tells you if that port is busy): when it plays, you're ready. It ends with a summary of what it did and how to get familiar with the project. If at some point it needs your computer's password, it tells you what to paste and where.
+**3. Paste the setup prompt** of the style you want: copy the block in [prompts/setup-flat2d.md](prompts/setup-flat2d.md), [prompts/setup-3d.md](prompts/setup-3d.md) or [prompts/setup-2.5d_cartoon.md](prompts/setup-2.5d_cartoon.md) and send it. Claude installs whatever is missing, downloads the project and makes you a basic test animation (no voice). It opens in a preview in your browser (http://localhost:3002 for Flat 2D, http://localhost:3003 for 3D, http://localhost:3004 for cartoon, or the one it tells you if that port is busy): when it plays, you're ready. It ends with a summary of what it did and how to get familiar with the project. If at some point it needs your computer's password, it tells you what to paste and where.
 
-**4. Make your video**: open a new chat in Claude Code in the `viral-claude-shorts` folder, drag the script's audio in and say what you want, for example *"anima este audio, la idea es explicar por qué el pan se pone duro"* (add *"en 3D"* for that style). The project's `CLAUDE.md` tells Claude the whole process, and it does it in one go: it designs an art plan (every object, set and camera move), checks a storyboard itself and delivers `videos/<topic>/final.mp4` with the preview link and the storyboard, so you can ask for changes by panel number. Want more control (assets, colors, specific scenes)? Use the template in [prompts/production.md](prompts/production.md).
+**4. Make your video**: open a new chat in Claude Code in the `viral-claude-shorts` folder, drag the script's audio in and say what you want, for example *"anima este audio, la idea es explicar por qué el pan se pone duro"* (add *"en 3D"* or *"en 2.5D"* for those styles). The project's `CLAUDE.md` tells Claude the whole process, and it does it in one go: it designs an art plan (every object, set and camera move), checks a storyboard itself and delivers `videos/<topic>/final.mp4` with the preview link and the storyboard, so you can ask for changes by panel number. Want more control (assets, colors, specific scenes)? Use the template in [prompts/production.md](prompts/production.md).
 
 <details>
 <summary>Doing it by hand, without Claude Code</summary>
@@ -68,6 +69,12 @@ For the 3D style, instead (or as well):
 npm install && cd styles/3d && npm install
 ```
 
+For the 2.5D cartoon style (`2.5d_cartoon`):
+
+```bash
+npm install && cd styles/2.5d_cartoon && npm install
+```
+
 One video, with your audio at `videos/my-topic/audio.wav`:
 
 ```bash
@@ -82,7 +89,7 @@ node core/storyboard.ts videos/my-topic
 node core/render.ts videos/my-topic
 ```
 
-To watch it moving with its audio: `node core/preview.ts videos/my-topic` opens http://localhost:3002 (3003 in 3D), or reuses it if it's already open. It stays open in the background; `--stop` closes it.
+To watch it moving with its audio: `node core/preview.ts videos/my-topic` opens http://localhost:3002 (3003 in 3D, 3004 in 2.5d_cartoon), or reuses it if it's already open. It stays open in the background; `--stop` closes it.
 
 Transcription assumes Spanish; for another language add `--language en` (or its code) to `transcribe.py`.
 
@@ -100,9 +107,10 @@ No recorded audio? `node core/voice.ts videos/my-topic` generates it from `scrip
 core/            transcribe, analyze, world (world test), scenes (contract), score (sound vocabulary), storyboard, preview, render, mix, music, review, voice, typecheck, types
 styles/          flat2d/ — adapter, engine, theme, library, INSTALL.md, USAGE.md
                  3d/ — adapter, engine, theme, library (simple pieces), detail (textures, fur, shared set), INSTALL.md, USAGE.md
-videos/<topic>/  audio.wav, plan.md, world.ts or world3d.ts, world.json, world.png, scenes.json, visuals.ts or visuals3d.ts, storyboard.png, final.mp4, report.md
-                 blue-sky/, aviones/ and detail-demo/ (simple + textured 3D, no voice) are the examples; hello/ and hello-3d/ are the setups' test animations (made on your computer)
-prompts/         setup-flat2d.md, setup-3d.md, production.md
+                 2.5d_cartoon/ — the 3D engine plus src/ (drawn characters, ink, lens blur, grade, painted world), INSTALL.md, USAGE.md
+videos/<topic>/  audio.wav, plan.md, world.ts, world3d.ts or world-cartoon.ts, world.json, world.png, scenes.json, visuals.ts, visuals3d.ts or visuals-cartoon.ts, storyboard.png, final.mp4, report.md
+                 blue-sky/, aviones/, detail-demo/ (simple + textured 3D, no voice) and cartoon-demo/ (cartoon, no voice) are the examples; hello/, hello-3d/ and hello-cartoon/ are the setups' test animations (made on your computer)
+prompts/         setup-flat2d.md, setup-3d.md, setup-2.5d_cartoon.md, production.md
 CLAUDE.md        what Claude reads in every chat here: a short request with an audio runs the whole production process
 ```
 

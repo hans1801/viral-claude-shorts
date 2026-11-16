@@ -7,7 +7,7 @@ This repo turns the audio of a script (a narration: recorded or generated) into 
 A short message is enough: "anima este audio", "make a video from this", a dragged-in file with an idea, etc. Treat it as the production prompt: read `prompts/production.md` and follow its steps exactly, filling its blanks from the message:
 
 - **Audio:** the file they gave you. If there's none, ask for it (that's the only thing you can't infer).
-- **Style:** `flat2d` unless they ask for another one in `styles/` (for example `3d`). If they don't say and the topic has volume (machines, vehicles, physics), suggest `3d` in one line.
+- **Style:** `flat2d` unless they ask for another one in `styles/` (for example `3d` or `2.5d_cartoon`). If they don't say and the topic has volume (machines, vehicles, physics), suggest `3d` in one line; if it's a story with people (history, everyday situations, a funny anecdote), suggest `2.5d_cartoon` (2.5D: drawn characters in a painted 3D world) in one line.
 - **Idea:** what they said they want to get across. If they didn't say it, infer it from the transcription and tell them in one line.
 - **Assets and notes:** only if they gave them.
 

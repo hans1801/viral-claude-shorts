@@ -1,0 +1,43 @@
+{
+ "style": "2.5d_cartoon",
+ "fps": 30,
+ "duration": 7,
+ "format": "9:16",
+ "notes": "Example of the cartoon (2.5D) style: cheerful, no voice. A small painted street; a kid walks in and waves, then the same street at golden hour.",
+ "scenes": [
+  {
+   "id": "street",
+   "type": "object",
+   "label": "Prueba cartoon",
+   "title": "¡Hola, mundo 2.5D!",
+   "highlight": "2.5D",
+   "visual": "day: the kid walks along the street, stops and waves; a neighbour smiles",
+   "keys": [
+    {
+     "id": "wave",
+     "t": 2.2
+    }
+   ],
+   "transition": "cut",
+   "t0": 0,
+   "t1": 3.8
+  },
+  {
+   "id": "sunset",
+   "t0": 3.8,
+   "type": "closing",
+   "label": "Siguiente paso",
+   "title": "Ahora, tu audio",
+   "highlight": "audio",
+   "visual": "golden hour close-up of the kid laughing, a burst of stars; lens blur on the houses",
+   "keys": [
+    {
+     "id": "pop",
+     "t": 5
+    }
+   ],
+   "transition": "cut",
+   "t1": 7
+  }
+ ]
+}
