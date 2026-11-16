@@ -5,7 +5,7 @@
 //          { "style": "3d", "shots": [ { "id": "test-hero", "title": "Hero: every state", "duration": 4, "snap": [0.5, 2, 3.5],
 //                                        "keys": [ { "id": "jump", "t": 1.5 } ] } ] }
 //          (duration, snap and keys in seconds FROM THE SHOT'S START; snap: the moments to capture, default one at 62%)
-//   and    the world file (world3d.ts in 3d, world.ts in flat2d): the reusable pieces, plus one defineVisuals entry per test shot
+//   and    the world file (world3d.ts in 3d, world-cartoon.ts in 2.5d_cartoon, world.ts in flat2d): the reusable pieces, plus one defineVisuals entry per test shot
 //   writes videos/<topic>/world.png (numbered panels) and world.md (panel -> shot, time, title)
 //   --preview opens the live preview with the world test, to watch it moving.
 // The test is built in videos/<topic>/world/ (regenerated each time): a silent video whose scenes are the test shots.
@@ -21,7 +21,7 @@ if (!argv[0] || argv[0].startsWith('--')) { console.error('usage: node core/worl
 const v = path.resolve(argv[0]), wf = path.join(v, 'world.json');
 if (!fs.existsSync(wf)) { console.error(`there is no ${path.join(argv[0], 'world.json')} (the test shots of the world)`); process.exit(1); }
 const W: { style: string; fps?: number; shots: Shot[] } = JSON.parse(fs.readFileSync(wf, 'utf8'));
-const WORLD_FILE: Record<string, string> = { '3d': 'world3d.ts', flat2d: 'world.ts' };
+const WORLD_FILE: Record<string, string> = { '3d': 'world3d.ts', '2.5d_cartoon': 'world-cartoon.ts', flat2d: 'world.ts' };
 const file = WORLD_FILE[W.style];
 const err: string[] = [];
 if (!file) err.push(`style "${W.style}" has no world file (${Object.entries(WORLD_FILE).map(([s, f]) => `${s}: ${f}`).join(', ')})`);

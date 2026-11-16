@@ -1,0 +1,4 @@
+{ "style": "2.5d_cartoon", "shots": [
+  { "id": "test-street", "title": "Street by day", "duration": 2, "snap": [0.4, 1.6] },
+  { "id": "test-golden", "title": "Street at golden hour", "duration": 2, "snap": [1.2] }
+] }

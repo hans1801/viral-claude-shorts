@@ -4,39 +4,58 @@
 //   frames(video, times, dir): `hyperframes snapshot`    video(video): `hyperframes render` -> MP4 (mix.ts adds the audio)
 //   texts(video): `hyperframes check` (text out of frame, overlaps, contrast)
 //   preview(video): builds and reuses the `hyperframes preview` server if it's running (it reloads by itself), or starts it in the background
+// make3D() builds that adapter for a style that runs on this same engine with its own folder, port, file names and extra
+// scripts (styles/2.5d_cartoon uses it): the engine, library and detail always come from here, so there's one copy of them.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildSync, transformSync } from 'esbuild';
+import { createRequire } from 'node:module';
+import type * as Esbuild from 'esbuild';
 import type { Adapter, Plan, Words } from '../../core/types.ts';
 
-const HERE = import.meta.dirname, PROJ = path.join(HERE, 'project'), PORT = '3003';   // Flat 2D's preview is on 3002: both can stay open
-const HF = path.join(HERE, 'node_modules', '.bin', process.platform === 'win32' ? 'hyperframes.cmd' : 'hyperframes');
-const hf = (args: string[], o: object = {}) => spawnSync(HF, args, { cwd: HERE, encoding: 'utf8', maxBuffer: 1 << 26, shell: process.platform === 'win32', ...o });
+const ENGINE = import.meta.dirname;   // engine.ts, library.ts, detail.ts and theme.css live here
 const esc = (s: unknown) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
+// esbuild comes from the style's own node_modules (F.here): a style built on this engine works without the 3D style installed
+type Esb = typeof Esbuild;
+const loadEsbuild = (here: string) => createRequire(path.join(here, 'package.json'))('esbuild') as Esb;
+const toJs = (esb: Esb, file: string) => esb.transformSync(fs.readFileSync(file, 'utf8'), { loader: 'ts', target: 'es2022', sourcefile: path.basename(file) }).code;
+// Three.js as one local script with the global THREE, so the render downloads nothing from the internet
+const THREE_EXTRAS = ['postprocessing/EffectComposer', 'postprocessing/RenderPass', 'postprocessing/ShaderPass', 'postprocessing/OutputPass', 'geometries/RoundedBoxGeometry', 'environments/RoomEnvironment'];
+const bundleThree = (esb: Esb, here: string, out: string) => { esb.buildSync({ stdin: { contents: ["export * from 'three';", ...THREE_EXTRAS.map((f) => `export * from 'three/examples/jsm/${f}.js';`)].join('\n'), resolveDir: here }, bundle: true, format: 'iife', globalName: 'THREE', minify: true, target: 'es2022', outfile: out }); };
+
+export interface Flavor {
+  here: string;                       // the style's folder: its node_modules and its project/
+  port: string;                       // its preview port
+  engine: string;                     // its name in the reports
+  label: string;                      // the page title suffix
+  world: string; visuals: string;     // the video's files (world3d.ts and visuals3d.ts in 3D)
+  extra?: (proj: string) => string[]; // writes extra scripts into project/ and returns their names (loaded after detail.js)
+}
+export const make3D = (F: Flavor): Adapter => {
+const HERE = F.here, PROJ = path.join(HERE, 'project'), PORT = F.port;
+let esb: Esb | undefined; const ESB = () => (esb ??= loadEsbuild(HERE));   // loaded on first use: importing this file must not need it
+const HF = path.join(HERE, 'node_modules', '.bin', process.platform === 'win32' ? 'hyperframes.cmd' : 'hyperframes');
+const hf = (args: string[], o: object = {}) => spawnSync(HF, args, { cwd: HERE, encoding: 'utf8', maxBuffer: 1 << 26, shell: process.platform === 'win32', ...o });
 // state of the background preview server for project/ (null if it isn't running)
 const previewStatus = (): { port: number } | null => {
   const r = hf(['preview', 'project', '--status', '--json']);
   try { const s = JSON.parse(r.stdout.slice(r.stdout.indexOf('{'))).result; return s?.state === 'running' ? s : null; } catch { return null; }
 };
-const toJs = (file: string) => transformSync(fs.readFileSync(file, 'utf8'), { loader: 'ts', target: 'es2022', sourcefile: path.basename(file) }).code;
-// Three.js as one local script with the global THREE, so the render downloads nothing from the internet
-const THREE_EXTRAS = ['postprocessing/EffectComposer', 'postprocessing/RenderPass', 'postprocessing/ShaderPass', 'postprocessing/OutputPass', 'geometries/RoundedBoxGeometry', 'environments/RoomEnvironment'];
-const bundleThree = (out: string) => { buildSync({ stdin: { contents: ["export * from 'three';", ...THREE_EXTRAS.map((f) => `export * from 'three/examples/jsm/${f}.js';`)].join('\n'), resolveDir: HERE }, bundle: true, format: 'iife', globalName: 'THREE', minify: true, target: 'es2022', outfile: out }); };
-
 const adapter: Adapter = {
-  engine: 'HyperFrames + Three.js',
+  engine: F.engine,
   build(v) {
     const E: Plan = JSON.parse(fs.readFileSync(path.join(v, 'scenes.json'), 'utf8')), wf = path.join(v, 'words.json');
     const P: Words = fs.existsSync(wf) ? JSON.parse(fs.readFileSync(wf, 'utf8')) : { duration: E.duration, words: [] };   // no voice: a silent animation
     fs.mkdirSync(PROJ, { recursive: true });
     fs.copyFileSync(path.join(HERE, 'node_modules', 'gsap', 'dist', 'gsap.min.js'), path.join(PROJ, 'gsap.min.js'));
-    bundleThree(path.join(PROJ, 'three.js'));
-    fs.copyFileSync(path.join(HERE, 'theme.css'), path.join(PROJ, 'theme.css'));
-    for (const f of ['engine', 'library', 'detail']) fs.writeFileSync(path.join(PROJ, `${f}.js`), toJs(path.join(HERE, `${f}.ts`)));
+    bundleThree(ESB(), HERE, path.join(PROJ, 'three.js'));
+    const theme = [HERE, ENGINE].map((d) => path.join(d, 'theme.css')).find((f) => fs.existsSync(f))!;
+    fs.copyFileSync(theme, path.join(PROJ, 'theme.css'));
+    for (const f of ['engine', 'library', 'detail']) fs.writeFileSync(path.join(PROJ, `${f}.js`), toJs(ESB(), path.join(ENGINE, `${f}.ts`)));
+    const extra = F.extra ? F.extra(PROJ) : [];
     // the video's world (reusable pieces, their states, sets, camera moves) and its scenes
-    for (const [src, out] of [['world3d.ts', 'world.js'], ['visuals3d.ts', 'visuals.js']]) { const f = path.join(v, src); fs.writeFileSync(path.join(PROJ, out), fs.existsSync(f) ? toJs(f) : ''); }
+    for (const [src, out] of [[F.world, 'world.js'], [F.visuals, 'visuals.js']]) { const f = path.join(v, src); fs.writeFileSync(path.join(PROJ, out), fs.existsSync(f) ? toJs(ESB(), f) : ''); }
     fs.rmSync(path.join(PROJ, 'assets'), { recursive: true, force: true });
     if (fs.existsSync(path.join(v, 'assets'))) fs.cpSync(path.join(v, 'assets'), path.join(PROJ, 'assets'), { recursive: true });
     const voice = ['mix.wav', 'audio.wav'].find((f) => fs.existsSync(path.join(v, f)));
@@ -51,7 +70,7 @@ const adapter: Adapter = {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1080, height=1920" />
-    <title>${esc(path.basename(v))} (3D)</title>
+    <title>${esc(path.basename(v))} (${esc(F.label)})</title>
     <script src="gsap.min.js"></script>
     <script src="three.js"></script>
     <link rel="stylesheet" href="theme.css" />
@@ -68,7 +87,7 @@ ${voice ? `      <audio id="voice" src="voice.wav" data-start="0" data-duration=
     </script>
     <script src="library.js"></script>
     <script src="detail.js"></script>
-    <script src="world.js"></script>
+${extra.map((f) => `    <script src="${f}"></script>\n`).join('')}    <script src="world.js"></script>
     <script src="visuals.js"></script>
     <script src="engine.js"></script>
     <script>
@@ -124,4 +143,7 @@ ${voice ? `      <audio id="voice" src="voice.wav" data-start="0" data-duration=
   },
   stopPreview() { hf(['preview', 'project', '--stop']); },
 };
-export default adapter;
+return adapter;
+};
+// Flat 2D's preview is on 3002 and 2.5d_cartoon's on 3004: all of them can stay open
+export default make3D({ here: ENGINE, port: '3003', engine: 'HyperFrames + Three.js', label: '3D', world: 'world3d.ts', visuals: 'visuals3d.ts' });

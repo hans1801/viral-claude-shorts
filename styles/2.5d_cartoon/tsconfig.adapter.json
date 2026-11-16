@@ -1,0 +1,7 @@
+{
+  // The Node side of this style (same rules as the root tsconfig.json).
+  // esbuild resolves from this style's node_modules, also for ../3d/adapter.ts (it may not be installed)
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "paths": { "esbuild": ["./node_modules/esbuild/lib/main.d.ts"] } },
+  "include": ["adapter.ts", "bundle.ts"]
+}

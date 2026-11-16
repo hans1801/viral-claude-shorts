@@ -1,0 +1,20 @@
+{
+  "name": "style-2.5d_cartoon",
+  "private": true,
+  "type": "module",
+  "description": "Cartoon (2.5D) style: flat 2D characters in a painted 3D world with ink lines. Runs on the 3D style's engine (HyperFrames + Three.js) plus pmndrs postprocessing.",
+  "scripts": {
+    "preview": "hyperframes preview project --port 3004",
+    "render": "hyperframes render project"
+  },
+  "dependencies": {
+    "esbuild": "0.25.12",
+    "gsap": "3.15.0",
+    "hyperframes": "0.8.166",
+    "postprocessing": "6.36.4",
+    "three": "0.169.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.169.0"
+  }
+}
